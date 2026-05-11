@@ -1,0 +1,68 @@
+{
+  "name": "LinkedIn Scheduler (Simplified)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linkedin-schedule",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "linkedin-schedule"
+    },
+    {
+      "parameters": {
+        "amount": 0,
+        "unit": "seconds",
+        "resume": "specificTime",
+        "specificTime": "={{ $json.body.scheduledTime }}"
+      },
+      "id": "2",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'http://localhost:5000/api/trigger-post/' + $json.body.id }}",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Trigger Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Trigger Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
