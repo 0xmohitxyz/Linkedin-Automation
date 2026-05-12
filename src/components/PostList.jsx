@@ -7,12 +7,14 @@ export default function PostList() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const API_URL = import.meta.env.VITE_API_URL || '';
+
   useEffect(() => {
     let isMounted = true;
     
     const fetchPostsIfMounted = async () => {
       try {
-        const res = await axios.get('/api/posts');
+        const res = await axios.get(`${API_URL}/api/posts`);
         if (isMounted) setPosts(res.data);
       } catch (err) {
         console.error(err);
@@ -32,8 +34,8 @@ export default function PostList() {
 
   const handleTrigger = async (id) => {
     try {
-      await axios.post(`/api/trigger-post/${id}`);
-      const res = await axios.get('/api/posts');
+      await axios.post(`${API_URL}/api/trigger-post/${id}`);
+      const res = await axios.get(`${API_URL}/api/posts`);
       setPosts(res.data);
     } catch (err) {
       console.error(err);

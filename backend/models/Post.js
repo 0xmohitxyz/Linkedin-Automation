@@ -9,6 +9,10 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  imagePath: {
+    type: String,
+    required: false,
+  },
   status: {
     type: String,
     enum: ['draft', 'scheduled', 'posted', 'failed'],

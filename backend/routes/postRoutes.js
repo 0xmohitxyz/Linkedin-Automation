@@ -1,5 +1,7 @@
 import express from 'express';
 import axios from 'axios';
+import multer from 'multer';
+import path from 'path';
 import { Post } from '../models/Post.js';
 import { generateLinkedInPost } from '../services/aiService.js';
 import { simulatedPost } from '../adapters/simulatedAdapter.js';
@@ -7,6 +9,19 @@ import { puppeteerPost } from '../adapters/puppeteerAdapter.js';
 import { apiAdapter } from '../adapters/apiAdapter.js';
 
 const router = express.Router();
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, uniqueSuffix + path.extname(file.originalname))
+  }
+});
+
+const upload = multer({ storage: storage });
+
 
 // 1. Generate Post via AI
 router.post('/generate-post', async (req, res) => {
@@ -23,13 +38,15 @@ router.post('/generate-post', async (req, res) => {
 });
 
 // 2. Schedule or Save Post
-router.post('/schedule-post', async (req, res) => {
+router.post('/schedule-post', upload.single('image'), async (req, res) => {
   try {
     const { topic, content, scheduledTime, mode } = req.body;
+    const imagePath = req.file ? req.file.path : null;
     
     const post = new Post({
       topic,
       content,
+      imagePath,
       scheduledTime: scheduledTime ? new Date(scheduledTime) : null,
       status: scheduledTime ? 'scheduled' : 'draft',
       mode: mode || 'simulated'

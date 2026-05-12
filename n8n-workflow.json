@@ -1,68 +1,228 @@
 {
-  "name": "LinkedIn Scheduler (Simplified)",
+  "name": "My workflow",
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "linkedin-schedule",
-        "responseMode": "onReceived",
+        "formTitle": "Linkedin Post Creator",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Post Topic"
+            },
+            {
+              "fieldLabel": "Target Audience"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "1",
-      "name": "Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
-      "position": [250, 300],
-      "webhookId": "linkedin-schedule"
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a8d859bf-a0fb-4273-9c30-baa1d15be280",
+      "name": "On form submission",
+      "webhookId": "3391d909-cdb8-434d-bfa2-aa01dab28e5f"
     },
     {
       "parameters": {
-        "amount": 0,
-        "unit": "seconds",
-        "resume": "specificTime",
-        "specificTime": "={{ $json.body.scheduledTime }}"
+        "options": {}
       },
-      "id": "2",
-      "name": "Wait",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1,
-      "position": [450, 300]
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        224
+      ],
+      "id": "ad431fa9-b191-4651-8a68-a8d9cdb8fca0",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ddFl1fHqDAJjWD2q",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ 'http://localhost:5000/api/trigger-post/' + $json.body.id }}",
+        "url": "https://api.tavily.com/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"{{ $json['Post Topic'] }}\",\n  \"search_depth\": \"basic\",\n  \"chunks_per_source\": 3,\n  \"max_results\": 1,\n  \"topic\": \"general\",\n  \"time_range\": null,\n  \"start_date\": \"2025-02-09\",\n  \"end_date\": \"2025-12-29\",\n  \"include_answer\": false,\n  \"include_raw_content\": false,\n  \"include_images\": false,\n  \"include_image_descriptions\": false,\n  \"include_favicon\": false,\n  \"include_domains\": [],\n  \"exclude_domains\": [],\n  \"country\": null,\n  \"auto_parameters\": false,\n  \"exact_match\": false,\n  \"include_usage\": false,\n  \"safe_search\": false\n}",
         "options": {}
       },
-      "id": "3",
-      "name": "Trigger Post",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        256
+      ],
+      "id": "01d5515f-073f-4f2e-ac22-71f771d4c4f8",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert LinkedIn ghostwriter specializing in high-performing professional content.\n\nCreate a polished, engaging, and insight-driven LinkedIn post using the following inputs:\n\nTopic: {{ $json['Post Topic'] }}\nTarget Audience: {{ $json['Target Audience'] }}\n\n${liveContext ? `Current real-time industry discussions and trends related to this topic:\\n${liveContext}\\n\\nUse these insights naturally to make the post feel timely, relevant, and conversation-worthy.\\n` : ''}\n\nRequirements:\n- Begin with a strong hook in the first 1-2 lines that stops scrolling.\n- Tailor the writing style and examples specifically for the target audience.\n- Keep the post between 120–200 words.\n- Use short paragraphs and clean spacing for high readability.\n- Make the post sound human, credible, and professionally opinionated.\n- Include actionable insights, observations, or a unique perspective.\n- Avoid generic AI-style wording and corporate fluff.\n- End with a compelling CTA that encourages discussion or opinions.\n- Add 2–4 highly relevant LinkedIn-style hashtags at the end.\n- Do NOT use emojis excessively (0–2 max if truly relevant).\n- Do NOT include titles, explanations, or quotation marks.\n\nReturn only the final LinkedIn post content.",
+        "options": {
+          "systemMessage": "You are a world-class LinkedIn ghostwriter and personal branding expert with access to real-time web research tools (Tavily).\n\nYour task is to create highly engaging, professional, and timely LinkedIn posts using:\n\n1. The provided topic\n2. The target audience\n3. Real-time industry/news/trend context gathered from Tavily or external search tools\n\nBefore writing:\n\n* Research the topic using available real-time search tools.\n* Identify recent trends, discussions, announcements, market sentiment, pain points, or industry shifts.\n* Extract only relevant and credible insights.\n* Use the live context naturally within the post to make it feel current and insightful.\n\nWriting Style:\n\n* Write like an experienced founder, operator, creator, or industry expert.\n* Sound human, sharp, credible, and conversational.\n* Avoid robotic AI phrasing, generic motivation, and corporate fluff.\n* Prioritize clarity, strong insights, and engagement.\n\nPost Structure:\n\n1. Start with a powerful hook that captures attention immediately.\n2. Build curiosity or present a strong insight/problem/opportunity.\n3. Incorporate relevant real-time context or industry developments.\n4. Deliver actionable insights, observations, lessons, or opinions.\n5. End with a natural CTA encouraging discussion or comments.\n6. Add 2–4 highly relevant hashtags.\n\nFormatting Rules:\n\n* Use short paragraphs and clean spacing.\n* Keep the post between 120–220 words unless specified otherwise.\n* Avoid excessive emojis (0–2 max).\n* Do not use markdown formatting.\n* Do not include titles, labels, explanations, or quotation marks.\n* Return only the final post content.\n\nContent Quality Rules:\n\n* Tailor the content specifically for the provided target audience.\n* Make the post feel platform-native and algorithm-friendly for LinkedIn.\n* Avoid fake statistics, fabricated news, or unverifiable claims.\n* Do not repeat the same sentence structure across posts.\n* Ensure every post feels original and thought-provoking.\n\nIf sufficient real-time context is unavailable:\n\n* Still create a high-quality evergreen post using industry knowledge.\n* Never mention that data was unavailable.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "067ad7b2-9804-48ed-b828-ec52a168696f",
+      "name": "Research Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=LinkedIn Post:  {{ $json.output }}",
+        "options": {
+          "systemMessage": "You are an agent that transforms LinkedIn posts into visual prompt descriptions for generating graphic marketing materials. These visuals are designed to be paired with the post on LinkedIn, helping communicate the message in a visually engaging, brand-aligned way.\n\n## Objective\n- Read and analyze the given LinkedIn post.\n- Identify the main message, insight, or takeaway from the post.\n- Create a clear and compelling graphic prompt that can be used with a text-to-image generator.\n- The result should be a marketing-style graphic — not a literal scene or hyperrealistic photo — that:\n  1. Visually supports or illustrates the key idea of the post\n  2. Looks appropriate for use in a professional LinkedIn feed\n  3. Feels polished, modern, and engaging\n\n## Output Instructions\n- Output only the final image prompt. Do not output quotation marks.\n- Do not repeat or rephrase the LinkedIn post.\n- Do not add any explanations or extra context — just the image prompt.\n- Never leave things blank like “Header area reserved for customizable callout text”.\n- Output numeric stats when available in the original post.\n\n## Style Guidelines\n- Think like a brand designer or marketing creative.\n- Visuals may include text, charts, icons, abstract shapes, overlays, modern illustrations, motion-like effects, bold typography elements (described, not rendered), or metaphorical concepts.\n- You can mention layout suggestions e.g. “split screen design”, “header with bold title and subtle background illustration”.\n- Assume the output will be generated using AI image tools — your prompt should guide those tools effectively.\n\n## Example Prompt Format\nA modern flat-style graphic showing a human brain connected to mechanical gears, representing the fusion of AI and automation.\nMinimalist background, soft gradients, clean sans-serif text placement space at the top."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        768,
+        240
+      ],
+      "id": "be35ad1c-7fb7-41c6-8858-77cf4a488e6f",
+      "name": "Image Agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "AIzaSyBfcdxDG9uunBUaaBo2lUYS-r33b9G_Tso"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Create a picture of a nano banana dish in a fancy restaurant with a Gemini theme\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "generated_image.png"
+            }
+          }
+        }
+      },
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [650, 300]
+      "typeVersion": 4.4,
+      "position": [
+        1088,
+        240
+      ],
+      "id": "67b794bf-51ce-4eda-be71-37f5396750e1",
+      "name": "HTTP Request1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        560,
+        0
+      ],
+      "id": "833f80de-2d2d-4b9f-9782-457a33713168",
+      "name": "Create a post"
     }
   ],
+  "pinData": {},
   "connections": {
-    "Webhook": {
+    "On form submission": {
       "main": [
         [
           {
-            "node": "Wait",
+            "node": "Research Agent",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Wait": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Agent": {
       "main": [
         [
           {
-            "node": "Trigger Post",
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     }
-  }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "30bc958e-ef60-433b-88b5-902f7f1d8626",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "07e4683a8d5f75868c7c5787580713c6f4d526f82105a6fb261603de3117215a"
+  },
+  "id": "6w1d1m5qrsQWBjvq",
+  "tags": []
 }

@@ -12,12 +12,16 @@ export default function CreatePost() {
   const [isScheduling, setIsScheduling] = useState(false);
   const [message, setMessage] = useState('');
 
+  const [image, setImage] = useState(null);
+
+  const API_URL = import.meta.env.VITE_API_URL || '';
+
   const handleGenerate = async () => {
     if (!topic) return;
     setIsGenerating(true);
     setMessage('');
     try {
-      const res = await axios.post('/api/generate-post', { topic });
+      const res = await axios.post(`${API_URL}/api/generate-post`, { topic });
       setContent(res.data.content);
     } catch (err) {
       console.error(err);
@@ -38,11 +42,17 @@ export default function CreatePost() {
         scheduledTime = new Date(`${date}T${time}`).toISOString();
       }
 
-      await axios.post('/api/schedule-post', {
-        topic,
-        content,
-        scheduledTime,
-        mode
+      const formData = new FormData();
+      formData.append('topic', topic);
+      formData.append('content', content);
+      if (scheduledTime) formData.append('scheduledTime', scheduledTime);
+      formData.append('mode', mode);
+      if (image) formData.append('image', image);
+
+      await axios.post(`${API_URL}/api/schedule-post`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       setMessage(scheduledTime ? 'Post scheduled successfully!' : 'Post saved as draft!');
@@ -50,6 +60,7 @@ export default function CreatePost() {
       setContent('');
       setDate('');
       setTime('');
+      setImage(null);
     } catch (err) {
       console.error(err);
       setMessage('Failed to schedule post.');
@@ -127,6 +138,16 @@ export default function CreatePost() {
                 <option value="puppeteer">Puppeteer (Browser UI)</option>
                 <option value="api">Official LinkedIn API (Free)</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Attach Image (Optional)</label>
+              <input
+                type="file"
+                accept="image/*"
+                className="w-full bg-[#1a1c23] border border-white/10 rounded-xl p-2 text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-purple-500/20 file:text-purple-400 hover:file:bg-purple-500/30"
+                onChange={(e) => setImage(e.target.files[0])}
+              />
             </div>
 
             <button
