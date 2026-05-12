@@ -12,6 +12,7 @@ export default function CreatePost() {
   const [isScheduling, setIsScheduling] = useState(false);
   const [message, setMessage] = useState('');
 
+  const [targetAudience, setTargetAudience] = useState('');
   const [image, setImage] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || '';
@@ -45,6 +46,7 @@ export default function CreatePost() {
       const formData = new FormData();
       formData.append('topic', topic);
       formData.append('content', content);
+      formData.append('targetAudience', targetAudience);
       if (scheduledTime) formData.append('scheduledTime', scheduledTime);
       formData.append('mode', mode);
       if (image) formData.append('image', image);
@@ -57,6 +59,7 @@ export default function CreatePost() {
 
       setMessage(scheduledTime ? 'Post scheduled successfully!' : 'Post saved as draft!');
       setTopic('');
+      setTargetAudience('');
       setContent('');
       setDate('');
       setTime('');
@@ -64,6 +67,47 @@ export default function CreatePost() {
     } catch (err) {
       console.error(err);
       setMessage('Failed to schedule post.');
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const handleSubmitToN8N = async () => {
+    if (!topic || !targetAudience || !date || !time) {
+      setMessage('Topic, Target Audience, Date, and Time are required for n8n scheduling.');
+      return;
+    }
+    
+    setIsScheduling(true);
+    setMessage('');
+    try {
+      let scheduledTime = null;
+      if (date && time) {
+        scheduledTime = new Date(`${date}T${time}`).toISOString();
+      }
+
+      const formData = new FormData();
+      formData.append('Post Topic', topic);
+      formData.append('Target Audience', targetAudience);
+      if (scheduledTime) formData.append('Scheduled Time', scheduledTime);
+      if (image) formData.append('Image', image);
+
+      // Submit directly to the n8n form webhook
+      await axios.post('http://localhost:5678/webhook-test/60872e95-eac7-405a-8eef-49c7c279d347', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      setMessage('Successfully sent to n8n workflow!');
+      setTopic('');
+      setTargetAudience('');
+      setDate('');
+      setTime('');
+      setImage(null);
+    } catch (err) {
+      console.error(err);
+      setMessage('Failed to send to n8n. Make sure the workflow is active or listening for test events.');
     } finally {
       setIsScheduling(false);
     }
@@ -80,23 +124,39 @@ export default function CreatePost() {
         {/* Left Column - Input & Controls */}
         <div className="space-y-6">
           <div className="glass-panel rounded-2xl p-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              What do you want to post about?
-            </label>
-            <textarea
-              className="w-full bg-[#1a1c23] border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
-              rows={4}
-              placeholder="e.g., The impact of AI on modern fintech startups..."
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-            />
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                What do you want to post about?
+              </label>
+              <textarea
+                className="w-full bg-[#1a1c23] border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
+                rows={4}
+                placeholder="e.g., The impact of AI on modern fintech startups..."
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Target Audience
+              </label>
+              <input
+                type="text"
+                className="w-full bg-[#1a1c23] border border-white/10 rounded-xl p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                placeholder="e.g., Software Engineers, Startup Founders..."
+                value={targetAudience}
+                onChange={(e) => setTargetAudience(e.target.value)}
+              />
+            </div>
+
             <button
               onClick={handleGenerate}
               disabled={isGenerating || !topic}
               className="mt-4 w-full bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-              {isGenerating ? 'Generating...' : 'Generate with AI'}
+              {isGenerating ? 'Generating...' : 'Generate with AI (Local)'}
             </button>
           </div>
 
@@ -156,7 +216,22 @@ export default function CreatePost() {
               className="w-full bg-white/5 border border-white/10 hover:bg-white/10 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isScheduling ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-              {date && time ? 'Schedule Post' : 'Save as Draft'}
+              {date && time ? 'Schedule Post (Local)' : 'Save as Draft'}
+            </button>
+
+            <div className="relative flex items-center py-2">
+              <div className="grow border-t border-gray-600"></div>
+              <span className="shrink-0 mx-4 text-gray-400 text-sm">OR</span>
+              <div className="grow border-t border-gray-600"></div>
+            </div>
+
+            <button
+              onClick={handleSubmitToN8N}
+              disabled={isScheduling || !topic || !targetAudience || !date || !time}
+              className="w-full bg-linear-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isScheduling ? <Loader2 className="animate-spin" size={20} /> : <Bot size={20} />}
+              Send to n8n AI Workflow
             </button>
 
             {message && (
@@ -168,7 +243,7 @@ export default function CreatePost() {
         </div>
 
         {/* Right Column - Preview */}
-        <div className="glass-panel rounded-2xl p-6 flex flex-col h-full">
+        <div className="glass-panel rounded-2xl p-6 flex flex-col h-100lg:h-auto lg:min-h-full">
           <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
             <Clock size={18} className="text-purple-400" />
             Live Preview
