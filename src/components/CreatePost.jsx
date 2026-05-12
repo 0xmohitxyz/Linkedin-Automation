@@ -243,7 +243,7 @@ export default function CreatePost() {
         </div>
 
         {/* Right Column - Preview */}
-        <div className="glass-panel rounded-2xl p-6 flex flex-col h-100lg:h-auto lg:min-h-full">
+        <div className="glass-panel rounded-2xl p-6 flex flex-col h-100 lg:h-auto lg:min-h-full">
           <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
             <Clock size={18} className="text-purple-400" />
             Live Preview
